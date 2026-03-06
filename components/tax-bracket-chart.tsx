@@ -176,19 +176,19 @@ function WaterfallChart({ income }: { income: number }) {
       >
         <XAxis
           dataKey="name"
-          tick={{ fill: "#9ca3af", fontSize: 12 }}
-          axisLine={{ stroke: "#374151", strokeWidth: 1 }}
-          tickLine={{ stroke: "#374151" }}
+          tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
+          axisLine={{ stroke: "var(--color-border)", strokeWidth: 1 }}
+          tickLine={{ stroke: "var(--color-border)" }}
         />
         <YAxis
           tickFormatter={formatCompact}
-          tick={{ fill: "#9ca3af", fontSize: 12 }}
-          axisLine={{ stroke: "#374151", strokeWidth: 1 }}
-          tickLine={{ stroke: "#374151" }}
+          tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
+          axisLine={{ stroke: "var(--color-border)", strokeWidth: 1 }}
+          tickLine={{ stroke: "var(--color-border)" }}
         />
         <Tooltip
           content={<StackedTooltip />}
-          cursor={{ fill: "rgba(255,255,255,0.05)" }}
+          cursor={{ fill: "rgba(128,128,128,0.1)" }}
         />
         <Bar dataKey="incomeInBracket" radius={[6, 6, 0, 0]}>
           {data.map((entry, index) => (
@@ -240,16 +240,16 @@ function EffectiveRateChart({ income }: { income: number }) {
           <XAxis
             dataKey="income"
             tickFormatter={formatCompact}
-            tick={{ fill: "#9ca3af", fontSize: 12 }}
-            axisLine={{ stroke: "#374151", strokeWidth: 1 }}
-            tickLine={{ stroke: "#374151" }}
+            tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
+            axisLine={{ stroke: "var(--color-border)", strokeWidth: 1 }}
+            tickLine={{ stroke: "var(--color-border)" }}
           />
           <YAxis
             domain={[0, 40]}
             tickFormatter={(v) => `${v}%`}
-            tick={{ fill: "#9ca3af", fontSize: 12 }}
-            axisLine={{ stroke: "#374151", strokeWidth: 1 }}
-            tickLine={{ stroke: "#374151" }}
+            tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
+            axisLine={{ stroke: "var(--color-border)", strokeWidth: 1 }}
+            tickLine={{ stroke: "var(--color-border)" }}
           />
           <Tooltip
             formatter={(value: number, name: string) => [
@@ -258,13 +258,13 @@ function EffectiveRateChart({ income }: { income: number }) {
             ]}
             labelFormatter={(label) => `Income: ${formatCurrency(label)}`}
             contentStyle={{
-              backgroundColor: "rgba(23, 23, 35, 0.95)",
-              border: "1px solid rgba(55, 65, 81, 0.5)",
+              backgroundColor: "var(--color-card)",
+              border: "1px solid var(--color-border)",
               borderRadius: "12px",
               backdropFilter: "blur(8px)",
             }}
-            itemStyle={{ color: "#e5e7eb" }}
-            labelStyle={{ color: "#9ca3af", marginBottom: "8px" }}
+            itemStyle={{ color: "var(--color-foreground)" }}
+            labelStyle={{ color: "var(--color-muted-foreground)", marginBottom: "8px" }}
           />
           <ReferenceLine
             x={income}
@@ -324,11 +324,12 @@ function BracketVisualizer({ income }: { income: number }) {
 
   return (
     <div className="space-y-4">
-      {TAX_BRACKETS.slice(0, 6).map((bracket, index) => {
+      {TAX_BRACKETS.map((bracket, index) => {
         const bracketData = breakdown.find((b) => b.rate === bracket.rate);
         const incomeInBracket = bracketData?.incomeInBracket || 0;
         const taxInBracket = bracketData?.taxInBracket || 0;
-        const bracketSize = Math.min(bracket.max, 500000) - bracket.min;
+        const bracketSize =
+          bracket.max === Infinity ? 500000 : bracket.max - bracket.min;
         const fillPercentage = Math.min(
           100,
           (incomeInBracket / bracketSize) * 100,
@@ -443,7 +444,7 @@ export default function TaxBracketChart() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
 
-      <div className="max-w-6xl mx-auto px-4 pt-14 md:py-14 pb-2 md:pb-2">
+      <div className="max-w-6xl mx-auto px-4 pt-10 md:py-10 pb-2 md:pb-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
             2024 Tax Year
@@ -455,7 +456,7 @@ export default function TaxBracketChart() {
           <br />
           <span className="text-primary">Actually Work</span>
         </h1>
-        <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl text-pretty">
+        <p className="mt-6 text-lg md:text-xl text-muted-foreground  text-pretty">
           A common misconception is that moving into a higher tax bracket means
           all your income is taxed at that rate. In reality, only the income{" "}
           <em className="text-foreground not-italic font-medium">within</em>{" "}
@@ -463,7 +464,7 @@ export default function TaxBracketChart() {
         </p>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 py-3 md:py-5 space-y-8">
         {/* Income Slider Card */}
         <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
@@ -533,26 +534,11 @@ export default function TaxBracketChart() {
         {/* Charts Section */}
         <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm overflow-hidden">
           <Tabs defaultValue="brackets" className="w-full">
-            <div className="border-b border-border/50 px-6 pt-6">
-              <TabsList className="bg-secondary/50 p-1">
-                <TabsTrigger
-                  value="brackets"
-                  className="data-[state=active]:bg-card data-[state=active]:shadow-sm"
-                >
-                  Bracket Fill
-                </TabsTrigger>
-                <TabsTrigger
-                  value="waterfall"
-                  className="data-[state=active]:bg-card data-[state=active]:shadow-sm"
-                >
-                  By Bracket
-                </TabsTrigger>
-                <TabsTrigger
-                  value="rates"
-                  className="data-[state=active]:bg-card data-[state=active]:shadow-sm"
-                >
-                  Rate Curves
-                </TabsTrigger>
+            <div className="border-b border-border/50 px-6 py-3 flex items-center">
+              <TabsList>
+                <TabsTrigger value="brackets">Bracket Fill</TabsTrigger>
+                <TabsTrigger value="waterfall">By Bracket</TabsTrigger>
+                <TabsTrigger value="rates">Rate Curves</TabsTrigger>
               </TabsList>
             </div>
 
