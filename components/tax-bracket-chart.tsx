@@ -419,25 +419,22 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-5 group hover:border-border transition-colors">
-      <div className="flex items-center gap-3 mb-3">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: `${color}20` }}
-        >
-          <Icon className="w-5 h-5" style={{ color }} />
-        </div>
-        <span className="text-sm text-muted-foreground">{label}</span>
-      </div>
-      <p
-        className="text-2xl md:text-3xl font-bold font-mono tracking-tight"
-        style={{ color }}
+    <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm px-4 py-3 flex items-center gap-3 group hover:border-border transition-colors">
+      <div
+        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+        style={{ backgroundColor: `${color}20` }}
       >
-        {value}
-      </p>
-      {subValue && (
-        <p className="text-xs text-muted-foreground mt-1">{subValue}</p>
-      )}
+        <Icon className="w-4 h-4" style={{ color }} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground truncate">{label}</p>
+        <p
+          className="text-lg font-bold font-mono tracking-tight leading-tight"
+          style={{ color }}
+        >
+          {value}
+        </p>
+      </div>
     </div>
   );
 }
@@ -542,7 +539,7 @@ export default function TaxBracketChart() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard
             icon={DollarSign}
             label="Total Federal Tax"
