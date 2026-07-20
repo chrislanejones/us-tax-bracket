@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign, TrendingUp, Percent, PiggyBank } from "lucide-react";
 
 // 2024 Federal Tax Brackets (Single Filer)
-const TAX_BRACKETS = [
+const TAX_BRACKETS_SINGLE = [
   { min: 0, max: 11600, rate: 0.1, label: "10%" },
   { min: 11600, max: 47150, rate: 0.12, label: "12%" },
   { min: 47150, max: 100525, rate: 0.22, label: "22%" },
@@ -27,6 +27,19 @@ const TAX_BRACKETS = [
   { min: 243725, max: 609350, rate: 0.35, label: "35%" },
   { min: 609350, max: Infinity, rate: 0.37, label: "37%" },
 ];
+
+// 2024 Federal Tax Brackets (Married Filing Jointly)
+const TAX_BRACKETS_MARRIED = [
+  { min: 0, max: 23200, rate: 0.1, label: "10%" },
+  { min: 23200, max: 94300, rate: 0.12, label: "12%" },
+  { min: 94300, max: 201050, rate: 0.22, label: "22%" },
+  { min: 201050, max: 383900, rate: 0.24, label: "24%" },
+  { min: 383900, max: 487450, rate: 0.32, label: "32%" },
+  { min: 487450, max: 731200, rate: 0.35, label: "35%" },
+  { min: 731200, max: Infinity, rate: 0.37, label: "37%" },
+];
+
+type FilingStatus = "single" | "married";
 
 // Modern gradient colors for brackets - teal to amber to coral
 const BRACKET_COLORS = [
@@ -64,14 +77,16 @@ interface TaxBreakdown {
   cumulativeTax: number;
 }
 
-function calculateTaxBreakdown(income: number): TaxBreakdown[] {
+type TaxBracket = { min: number; max: number; rate: number; label: string };
+
+function calculateTaxBreakdown(income: number, brackets: TaxBracket[]): TaxBreakdown[] {
   const breakdown: TaxBreakdown[] = [];
   let remainingIncome = income;
   let cumulativeIncome = 0;
   let cumulativeTax = 0;
 
-  for (let i = 0; i < TAX_BRACKETS.length; i++) {
-    const bracket = TAX_BRACKETS[i];
+  for (let i = 0; i < brackets.length; i++) {
+    const bracket = brackets[i];
     const bracketSize = bracket.max - bracket.min;
     const incomeInBracket = Math.max(0, Math.min(remainingIncome, bracketSize));
     const taxInBracket = incomeInBracket * bracket.rate;
@@ -99,18 +114,18 @@ function calculateTaxBreakdown(income: number): TaxBreakdown[] {
   return breakdown;
 }
 
-function calculateTotalTax(income: number): number {
-  return calculateTaxBreakdown(income).reduce(
+function calculateTotalTax(income: number, brackets: TaxBracket[]): number {
+  return calculateTaxBreakdown(income, brackets).reduce(
     (sum, b) => sum + b.taxInBracket,
     0,
   );
 }
 
-function getMarginalRate(income: number): number {
-  for (const bracket of TAX_BRACKETS) {
+function getMarginalRate(income: number, brackets: TaxBracket[]): number {
+  for (const bracket of brackets) {
     if (income <= bracket.max) return bracket.rate;
   }
-  return TAX_BRACKETS[TAX_BRACKETS.length - 1].rate;
+  return brackets[brackets.length - 1].rate;
 }
 
 interface CustomTooltipProps {
@@ -155,8 +170,8 @@ function StackedTooltip({ active, payload }: CustomTooltipProps) {
   );
 }
 
-function WaterfallChart({ income }: { income: number }) {
-  const breakdown = calculateTaxBreakdown(income);
+function WaterfallChart({ income, brackets }: { income: number; brackets: TaxBracket[] }) {
+  const breakdown = calculateTaxBreakdown(income, brackets);
 
   const data = breakdown.map((b, i) => ({
     name: `${(b.rate * 100).toFixed(0)}%`,
@@ -200,15 +215,15 @@ function WaterfallChart({ income }: { income: number }) {
   );
 }
 
-function EffectiveRateChart({ income }: { income: number }) {
+function EffectiveRateChart({ income, brackets }: { income: number; brackets: TaxBracket[] }) {
   const dataPoints = [];
   const maxIncome = Math.max(income * 1.2, 250000);
   const step = maxIncome / 50;
 
   for (let i = step; i <= maxIncome; i += step) {
-    const totalTax = calculateTotalTax(i);
+    const totalTax = calculateTotalTax(i, brackets);
     const effectiveRate = (totalTax / i) * 100;
-    const marginalRate = getMarginalRate(i) * 100;
+    const marginalRate = getMarginalRate(i, brackets) * 100;
     dataPoints.push({
       income: i,
       effectiveRate: parseFloat(effectiveRate.toFixed(2)),
@@ -217,8 +232,8 @@ function EffectiveRateChart({ income }: { income: number }) {
   }
 
   const currentEffectiveRate =
-    income > 0 ? (calculateTotalTax(income) / income) * 100 : 0;
-  const currentMarginalRate = getMarginalRate(income) * 100;
+    income > 0 ? (calculateTotalTax(income, brackets) / income) * 100 : 0;
+  const currentMarginalRate = getMarginalRate(income, brackets) * 100;
 
   return (
     <div className="space-y-4">
@@ -319,12 +334,12 @@ function EffectiveRateChart({ income }: { income: number }) {
   );
 }
 
-function BracketVisualizer({ income }: { income: number }) {
-  const breakdown = calculateTaxBreakdown(income);
+function BracketVisualizer({ income, brackets }: { income: number; brackets: TaxBracket[] }) {
+  const breakdown = calculateTaxBreakdown(income, brackets);
 
   return (
     <div className="space-y-4">
-      {TAX_BRACKETS.map((bracket, index) => {
+      {brackets.map((bracket, index) => {
         const bracketData = breakdown.find((b) => b.rate === bracket.rate);
         const incomeInBracket = bracketData?.incomeInBracket || 0;
         const taxInBracket = bracketData?.taxInBracket || 0;
@@ -429,16 +444,19 @@ function StatCard({
 
 export default function TaxBracketChart() {
   const [income, setIncome] = useState(75000);
+  const [filingStatus, setFilingStatus] = useState<FilingStatus>("single");
+
+  const brackets = filingStatus === "married" ? TAX_BRACKETS_MARRIED : TAX_BRACKETS_SINGLE;
 
   const { totalTax, effectiveRate, marginalRate, takeHome } = useMemo(() => {
-    const tax = calculateTotalTax(income);
+    const tax = calculateTotalTax(income, brackets);
     return {
       totalTax: tax,
       effectiveRate: income > 0 ? (tax / income) * 100 : 0,
-      marginalRate: getMarginalRate(income) * 100,
+      marginalRate: getMarginalRate(income, brackets) * 100,
       takeHome: income - tax,
     };
-  }, [income]);
+  }, [income, brackets]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -449,7 +467,7 @@ export default function TaxBracketChart() {
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
             2024 Tax Year
           </span>
-          <span>Single Filer Brackets</span>
+          <span>{filingStatus === "married" ? "Married Filing Jointly Brackets" : "Single Filer Brackets"}</span>
         </div>
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground text-balance">
           How US Federal Tax Brackets
@@ -476,7 +494,30 @@ export default function TaxBracketChart() {
                 {formatCurrency(income)}
               </div>
             </div>
-            <div className="text-right">
+            <div className="flex flex-col items-end gap-2">
+              {/* Filing status toggle */}
+              <div className="inline-flex rounded-lg border border-border/60 bg-secondary/40 p-1 gap-1">
+                <button
+                  onClick={() => setFilingStatus("single")}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
+                    filingStatus === "single"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Single
+                </button>
+                <button
+                  onClick={() => setFilingStatus("married")}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
+                    filingStatus === "married"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Married
+                </button>
+              </div>
               <span className="text-sm text-muted-foreground">
                 Drag to adjust
               </span>
@@ -554,7 +595,7 @@ export default function TaxBracketChart() {
                       bracket from lowest to highest
                     </p>
                   </div>
-                  <BracketVisualizer income={income} />
+                  <BracketVisualizer income={income} brackets={brackets} />
                 </div>
               </TabsContent>
 
@@ -569,7 +610,7 @@ export default function TaxBracketChart() {
                       tax bracket
                     </p>
                   </div>
-                  <WaterfallChart income={income} />
+                  <WaterfallChart income={income} brackets={brackets} />
                 </div>
               </TabsContent>
 
@@ -584,7 +625,7 @@ export default function TaxBracketChart() {
                       rate
                     </p>
                   </div>
-                  <EffectiveRateChart income={income} />
+                  <EffectiveRateChart income={income} brackets={brackets} />
                 </div>
               </TabsContent>
             </div>
@@ -621,12 +662,22 @@ export default function TaxBracketChart() {
               <div className="mt-4 pt-4 border-t border-border/50">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">
-                    2024 Single Filer Brackets:
+                    2024 {filingStatus === "married" ? "Married Filing Jointly" : "Single Filer"} Brackets:
                   </span>{" "}
-                  10% (up to $11,600) → 12% ($11,601-$47,150) → 22%
-                  ($47,151-$100,525) → 24% ($100,526-$191,950) → 32%
-                  ($191,951-$243,725) → 35% ($243,726-$609,350) → 37% (over
-                  $609,350)
+                  {brackets.map((b, i) => {
+                    const next = brackets[i + 1];
+                    const rangeLabel =
+                      b.max === Infinity
+                        ? `over ${formatCurrency(b.min)}`
+                        : i === 0
+                          ? `up to ${formatCurrency(b.max)}`
+                          : `${formatCurrency(b.min + 1)}-${formatCurrency(b.max)}`;
+                    return (
+                      <span key={i}>
+                        {b.label} ({rangeLabel}){next ? " → " : ""}
+                      </span>
+                    );
+                  })}
                 </p>
               </div>
             </div>
